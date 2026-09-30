@@ -144,8 +144,9 @@ Format-Table
 
 
 
-
-
+./JeffInTechGroups.ps1  
+#run this script in the directory that it is in 
+#cd to change directory ls to see what is in it 
 
 
 
