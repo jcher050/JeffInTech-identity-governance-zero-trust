@@ -1,6 +1,26 @@
-EmployeeId,FirstName,LastName,Department,JobTitle,Manager,EmploymentType
-APX001,John,Carter,Finance,Financial Analyst,Sarah Miller,Employee
-APX002,Maria,Lopez,Engineering,Systems Engineer,David Kim,Employee
-APX003,Robert,Jones,Operations,Operations Specialist,Lisa Brown,Contractor
-APX004,Roberta,Maria,Operations,Operations Specialist,Lisa Brown,Contractor
-APX005,Lisa,santana,Operations,Operations Specialist,Lisa Brown,Contractor
+employeeId,displayName,givenName,surname,UPN,department,jobTitle,manager,usageLocation,employeeHireDate,employeeLeaveDateTime,employeeType,companyName
+JIT0001,Mia Johnson,Mia,Johnson,mia.johnson@jeffintech.com,HR,HR Manager,bruce.wayne@jeffintech.com,US,2022-04-04T05:00:00Z,,Employee,JeffInTech
+JIT0002,Ava Williams,Ava,Williams,ava.williams@jeffintech.com,Finance,Financial Analyst,olivia.grant@jeffintech.com,US,2024-01-08T05:00:00Z,,Employee,JeffInTech
+JIT0003,Liam Carter,Liam,Carter,liam.carter@jeffintech.com,Sales,Sales Manager,bruce.wayne@jeffintech.com,US,2022-08-15T05:00:00Z,,Employee,JeffInTech
+JIT0004,Noah Harris,Noah,Harris,noah.harris@jeffintech.com,IT,Identity Administrator,bruce.wayne@jeffintech.com,US,2023-02-06T05:00:00Z,,Employee,JeffInTech
+JIT0005,Emma Reed,Emma,Reed,emma.reed@jeffintech.com,IT,Helpdesk Administrator,noah.harris@jeffintech.com,US,2025-01-13T05:00:00Z,,Employee,JeffInTech
+JIT0006,Olivia Grant,Olivia,Grant,olivia.grant@jeffintech.com,Finance,Finance Manager,bruce.wayne@jeffintech.com,US,2022-09-12T05:00:00Z,,Employee,JeffInTech
+JIT0007,Ethan Brooks,Ethan,Brooks,ethan.brooks@jeffintech.com,IT,Project Consultant,noah.harris@jeffintech.com,US,2026-03-02T05:00:00Z,2026-10-31T23:00:00Z,Contractor,JeffInTech
+JIT0008,Bruce Wayne,Bruce,Wayne,bruce.wayne@jeffintech.com,IT,Chief Information Officer,,US,2021-06-01T05:00:00Z,,Employee,JeffInTech
+JIT0009,Diana Prince,Diana,Prince,diana.prince@jeffintech.com,HR,HR Business Partner,mia.johnson@jeffintech.com,US,2023-04-10T05:00:00Z,,Employee,JeffInTech
+JIT0010,Barry Allen,Barry,Allen,barry.allen@jeffintech.com,Sales,Sales Operations Analyst,liam.carter@jeffintech.com,US,2024-02-19T05:00:00Z,,Employee,JeffInTech
+JIT0011,Arthur Curry,Arthur,Curry,arthur.curry@jeffintech.com,Sales,Enterprise Account Executive,liam.carter@jeffintech.com,US,2023-07-17T05:00:00Z,,Employee,JeffInTech
+JIT0012,Hal Jordan,Hal,Jordan,hal.jordan@jeffintech.com,IT,Systems Administrator,noah.harris@jeffintech.com,US,2024-06-03T05:00:00Z,,Employee,JeffInTech
+JIT0013,J'onn J'onzz,J'onn,J'onzz,jonn.jonzz@jeffintech.com,IT,Security Engineer,noah.harris@jeffintech.com,US,2023-03-20T05:00:00Z,,Employee,JeffInTech
+JIT0014,Victor Stone,Victor,Stone,victor.stone@jeffintech.com,IT,Cloud Engineer,noah.harris@jeffintech.com,US,2024-08-12T05:00:00Z,,Employee,JeffInTech
+JIT0015,Lois Lane,Lois,Lane,lois.lane@jeffintech.com,HR,Employee Communications Specialist,mia.johnson@jeffintech.com,US,2024-05-06T05:00:00Z,,Employee,JeffInTech
+JIT0016,Oliver Queen,Oliver,Queen,oliver.queen@jeffintech.com,Finance,Procurement Analyst,olivia.grant@jeffintech.com,US,2023-10-02T05:00:00Z,,Employee,JeffInTech
+JIT0017,Dinah Lance,Dinah,Lance,dinah.lance@jeffintech.com,IT,Security Consultant,noah.harris@jeffintech.com,US,2026-05-11T05:00:00Z,2026-12-15T23:00:00Z,Contractor,JeffInTech
+JIT0018,Shayera Hol,Shayera,Hol,shayera.hol@jeffintech.com,IT,Cloud Migration Consultant,noah.harris@jeffintech.com,US,2026-06-01T05:00:00Z,2027-02-28T23:00:00Z,Contractor,JeffInTech
+JIT0019,Ray Palmer,Ray,Palmer,ray.palmer@jeffintech.com,Finance,FP&A Analyst,olivia.grant@jeffintech.com,US,2024-11-04T05:00:00Z,,Employee,JeffInTech
+JIT0020,John Stewart,John,Stewart,john.stewart@jeffintech.com,IT,Network Engineer,noah.harris@jeffintech.com,US,2023-11-13T05:00:00Z,,Employee,JeffInTech
+JIT0021,Tim Drake,Tim,Drake,tim.drake@jeffintech.com,IT,Endpoint Administrator,noah.harris@jeffintech.com,US,2025-02-10T05:00:00Z,,Employee,JeffInTech
+JIT0022,Donna Troy,Donna,Troy,donna.troy@jeffintech.com,HR,Talent Operations Specialist,mia.johnson@jeffintech.com,US,2025-03-03T05:00:00Z,,Employee,JeffInTech
+JIT0023,Clark Kent,Clark,Kent,clark.kent@jeffintech.com,Sales,Account Executive,liam.carter@jeffintech.com,US,2024-04-15T05:00:00Z,,Employee,JeffInTech
+JIT0024,Iris West,Iris,West,iris.west@jeffintech.com,Sales,Sales Enablement Specialist,liam.carter@jeffintech.com,US,2025-05-19T05:00:00Z,,Employee,JeffInTech
+JIT0025,Wally West,Wally,West,wally.west@jeffintech.com,Sales,CRM Data Consultant,liam.carter@jeffintech.com,US,2026-10-15T05:00:00Z,2027-01-15T23:00:00Z,Contractor,JeffInTech
