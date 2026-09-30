@@ -8,7 +8,7 @@
 
 Import-Module Microsoft.Graph.Users
 
-$CsvPath = "../data/hr-users-sample.csv"
+$CsvPath = "../SC-300/hr-users-sample.csv"
 
 $Users = Import-Csv $CsvPath
 
