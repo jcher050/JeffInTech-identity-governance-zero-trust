@@ -12,6 +12,5 @@
  Department                 EmployeeType                                            IAM Controls
      │                           │                                                       │
      │                           │                                  ________________________________________________
-     |                           |                                  |                    |                         |
  Dynamic Group           Contractors Group                         CA                   PIM                  Passwordless
 
