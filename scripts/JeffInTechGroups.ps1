@@ -27,29 +27,27 @@
 # 1. Safety/error handling
 # ============================================================
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+# StrictMode = catch mistakes
+Set-StrictMode -Version Latest  ### Safety setup If I use an undefined variable or make a sloppy scripting mistake, PowerShell is more likely to catch it instead of quietly continuing.
+$ErrorActionPreference = "Stop"  ## stop on errors. If a real error happens, stop the script instead of continuing.
 
+## Make the console readable; print a clean heading to the terminal
 Write-Host ""
 Write-Host "============================================================"
 Write-Host " JeffInTech Entra Group Provisioning"
 Write-Host "============================================================"
 Write-Host ""
+## Make the console readable; print a clean heading to the terminal
 
 
 # ============================================================
 # 2. JeffInTech tenant configuration
-#
-# IMPORTANT:
-# This is the tenant you already successfully connected to.
-#
-# Tenant IDs are identifiers rather than passwords/secrets,
-# but for a public GitHub project you could later move this
-# into a local configuration/environment variable.
 # ============================================================
 
-$TargetTenantId = "efdfede2-6b1e-4580-830e-a57f698128af"
+# Stores the ID of the Microsoft Entra tenant
+$TargetTenantId = "xxxxxxxxxx-xxxxx-xxxx-xxxx-xxxxxxx"
 
+# Stores your company domain so the script can recognize JeffInTech accounts
 $JeffInTechDomain = "jeffintech.com"
 
 
@@ -57,14 +55,14 @@ $JeffInTechDomain = "jeffintech.com"
 # 3. Import Microsoft Graph modules
 # ============================================================
 
-Write-Host "Loading Microsoft Graph modules..."
+Write-Host "Loading Microsoft Graph modules..." ## Make the console readable; print a clean heading to the terminal
 
-Import-Module Microsoft.Graph.Authentication
-Import-Module Microsoft.Graph.Groups
+Import-Module Microsoft.Graph.Authentication  
+Import-Module Microsoft.Graph.Groups          
 Import-Module Microsoft.Graph.Users
 
-Write-Host "[OK] Microsoft Graph modules loaded."
-Write-Host ""
+Write-Host "[OK] Microsoft Graph modules loaded."  ## Make the console readable; print a clean heading to the terminal
+Write-Host "" ## Make the console readable; print a clean heading to the terminal
 
 
 # ============================================================
