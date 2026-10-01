@@ -1,16 +1,16 @@
-
                      JeffInTech
                   jeffintech.com
                         │
-               _________|_________________________________________________________________
-               │                                                                         │
-          HR Attributes                                                               Security
-               │                                                                         │
-     __________|__________________                                                       |
-     │                           │                                                       │                                                        
-     |                           |                                                       | 
- Department                 EmployeeType                                            IAM Controls
-     │                           │                                                       │
-     │                           │                                  ________________________________________________
- Dynamic Group           Contractors Group                         CA                   PIM                  Passwordless
-
+               ┌────────┴────────┐
+               │                 │
+          HR Attributes       Security
+               │                 │
+     ┌─────────┼─────────┐       │
+     │         │         │       │
+     ▼         ▼         ▼       ▼
+Department EmployeeType       IAM Controls
+     │         │                 │
+     │         │            ┌────┼──────┐
+     ▼         ▼            ▼    ▼      ▼
+ Dynamic   Contractors     CA   PIM  Passwordless
+ Groups       Group
