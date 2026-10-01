@@ -24,3 +24,48 @@ This project designs and implements an enterprise Microsoft Entra identity archi
 * Identity monitoring using Entra logs, Log Analytics, KQL, and Microsoft Sentinel
 
 ---
+## Phase 1 — Identity Foundation ✅
+
+Built the initial **JeffInTech identity foundation** using Microsoft Entra ID and Microsoft Graph PowerShell, establishing an HR-driven identity model for lifecycle automation, governance, and Zero Trust access.
+
+### Implemented
+
+- Provisioned **25 fictional workforce identities** using Microsoft Graph PowerShell
+- Standardized HR identity attributes including:
+  - `employeeId`
+  - `department`
+  - `jobTitle`
+  - `employeeType`
+  - `employeeHireDate`
+  - `employeeLeaveDateTime`
+  - `usageLocation`
+- Configured manager relationships to establish an organizational hierarchy
+- Created dynamic department security groups for:
+  - Finance
+  - Sales
+  - Human Resources
+  - IT
+- Automated contractor classification and membership in `GRP-Contractors`
+- Created dedicated **SSPR** and **Passwordless Authentication** pilot groups
+- Created security groups for future **Conditional Access** policy targeting
+- Created `GRP-PIM-CloudOperators` as a **role-assignable security group** for future Privileged Identity Management (PIM)
+- Added validation logic to confirm all required IAM groups were successfully provisioned
+
+### Identity Model
+
+```text
+HR Identity Data
+       │
+       ▼
+Microsoft Graph PowerShell
+       │
+       ├── Users
+       ├── HR Attributes
+       ├── Manager Relationships
+       ├── Dynamic Department Groups
+       ├── Contractor Membership
+       └── IAM / Security Groups
+                │
+                ▼
+        Microsoft Entra ID
+          jeffintech.com
