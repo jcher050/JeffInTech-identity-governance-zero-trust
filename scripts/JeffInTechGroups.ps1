@@ -1,26 +1,30 @@
 <#
 .SYNOPSIS
     Creates the security groups required for the JeffInTech
-    Entra Identity Modernization project.
+    Entra Identity Modernization portfolio project.
 
 .DESCRIPTION
     This script:
 
-    1. Connects to Microsoft Graph.
-    2. Creates dynamic department security groups.
-    3. Creates assigned security groups used for IAM/security controls.
-    4. Creates a role-assignable group for PIM.
-    5. Finds JeffInTech contractors by employeeType.
-    6. Adds contractors to GRP-Contractors.
-    7. Avoids recreating existing groups or duplicate memberships.
+    1. Uses the existing Microsoft Graph session when possible.
+    2. Validates that the session is connected to the JeffInTech tenant.
+    3. Reconnects with Device Code authentication only if required.
+    4. Creates four dynamic department security groups.
+    5. Creates assigned IAM/security groups.
+    6. Creates a role-assignable security group for PIM.
+    7. Finds JeffInTech contractors using employeeType.
+    8. Adds those contractors to GRP-Contractors.
+    9. Avoids recreating existing groups or duplicate memberships.
+    10. Produces a validation summary at the end.
 
 .NOTES
     Project: JeffInTech Entra Identity Modernization
     Environment: Fictional portfolio/lab environment
 #>
 
+
 # ============================================================
-# 1. Safety / error handling
+# 1. Safety/error handling
 # ============================================================
 
 Set-StrictMode -Version Latest
@@ -34,16 +38,47 @@ Write-Host ""
 
 
 # ============================================================
-# 2. Import required Microsoft Graph modules
+# 2. JeffInTech tenant configuration
+#
+# IMPORTANT:
+# This is the tenant you already successfully connected to.
+#
+# Tenant IDs are identifiers rather than passwords/secrets,
+# but for a public GitHub project you could later move this
+# into a local configuration/environment variable.
 # ============================================================
+
+$TargetTenantId = "efdfede2-6b1e-4580-830e-a57f698128af"
+
+$JeffInTechDomain = "jeffintech.com"
+
+
+# ============================================================
+# 3. Import Microsoft Graph modules
+# ============================================================
+
+Write-Host "Loading Microsoft Graph modules..."
 
 Import-Module Microsoft.Graph.Authentication
 Import-Module Microsoft.Graph.Groups
 Import-Module Microsoft.Graph.Users
 
+Write-Host "[OK] Microsoft Graph modules loaded."
+Write-Host ""
+
 
 # ============================================================
-# 3. Microsoft Graph permissions
+# 4. Microsoft Graph permissions
+#
+# Group.ReadWrite.All
+#     Create and manage the security groups.
+#
+# User.Read.All
+#     Read users and HR attributes such as employeeType.
+#
+# RoleManagement.ReadWrite.Directory
+#     Required for privileged/role management operations and
+#     useful for the PIM portion of this project.
 # ============================================================
 
 $RequiredScopes = @(
@@ -52,18 +87,51 @@ $RequiredScopes = @(
     "RoleManagement.ReadWrite.Directory"
 )
 
+
+# ============================================================
+# 5. Validate the existing Microsoft Graph connection
+# ============================================================
+
 $Context = Get-MgContext
+
+$ReconnectRequired = $false
+
 
 if (-not $Context) {
 
-    Write-Host "No Microsoft Graph session found."
-    Write-Host "Connecting to Microsoft Graph..."
+    Write-Host "[INFO] No active Microsoft Graph session was found."
 
-    Connect-MgGraph `
-        -Scopes $RequiredScopes `
-        -NoWelcome
+    $ReconnectRequired = $true
 }
 else {
+
+    Write-Host "[OK] Existing Microsoft Graph session found."
+    Write-Host "     Tenant: $($Context.TenantId)"
+    Write-Host "     Auth:   $($Context.AuthType)"
+    Write-Host "     Scope:  $($Context.ContextScope)"
+    Write-Host ""
+
+
+    # --------------------------------------------------------
+    # Make sure we are operating against the correct tenant.
+    # --------------------------------------------------------
+
+    if ($Context.TenantId -ne $TargetTenantId) {
+
+        Write-Host "[WARNING] The current session is connected to:"
+        Write-Host "          $($Context.TenantId)"
+        Write-Host ""
+        Write-Host "Expected JeffInTech tenant:"
+        Write-Host "          $TargetTenantId"
+        Write-Host ""
+
+        $ReconnectRequired = $true
+    }
+
+
+    # --------------------------------------------------------
+    # Make sure the Graph token contains our required scopes.
+    # --------------------------------------------------------
 
     $MissingScopes = @(
         $RequiredScopes |
@@ -72,46 +140,121 @@ else {
         }
     )
 
+
     if ($MissingScopes.Count -gt 0) {
 
-        Write-Host "Current Graph session is missing required permissions:"
-        $MissingScopes | ForEach-Object {
-            Write-Host " - $_"
+        Write-Host "[WARNING] Current session is missing Graph permissions:"
+
+        foreach ($Scope in $MissingScopes) {
+
+            Write-Host "          - $Scope"
         }
 
         Write-Host ""
-        Write-Host "Reconnecting to Microsoft Graph..."
 
-        Disconnect-MgGraph | Out-Null
-
-        Connect-MgGraph `
-            -Scopes $RequiredScopes `
-            -NoWelcome
+        $ReconnectRequired = $true
     }
 }
 
-$Context = Get-MgContext
+
+# ============================================================
+# 6. Reconnect only when necessary
+#
+# This matches the authentication method that already worked
+# successfully for you:
+#
+# -TenantId
+# -Scopes
+# -UseDeviceCode
+# -ContextScope Process
+# ============================================================
+
+if ($ReconnectRequired) {
+
+    Write-Host "Reconnecting to Microsoft Graph..."
+    Write-Host ""
+
+    if (Get-MgContext) {
+
+        Disconnect-MgGraph | Out-Null
+    }
+
+
+    Connect-MgGraph `
+        -TenantId $TargetTenantId `
+        -Scopes $RequiredScopes `
+        -UseDeviceCode `
+        -ContextScope Process `
+        -NoWelcome
+
+
+    $Context = Get-MgContext
+}
+
+
+# ============================================================
+# 7. Final connection validation
+# ============================================================
+
+if (-not $Context) {
+
+    throw "Microsoft Graph authentication failed."
+}
+
+
+if ($Context.TenantId -ne $TargetTenantId) {
+
+    throw "Connected tenant does not match the JeffInTech tenant."
+}
+
 
 Write-Host ""
-Write-Host "Connected to Microsoft Graph as:"
-Write-Host $Context.Account
+Write-Host "[CONNECTED] Microsoft Graph"
+Write-Host "Tenant ID:     $($Context.TenantId)"
+Write-Host "Authentication:$($Context.AuthType)"
+Write-Host "Context Scope: $($Context.ContextScope)"
+
+if ($Context.Account) {
+
+    Write-Host "Account:       $($Context.Account)"
+}
+else {
+
+    Write-Host "Account:       Device-code delegated session"
+}
+
 Write-Host ""
 
 
 # ============================================================
-# 4. Helper function - find a group safely
+# 8. Helper function
+#
+# Finds exactly one group by display name.
+#
+# This protects the script from accidentally modifying the
+# wrong group when duplicate names exist.
 # ============================================================
 
 function Get-JeffInTechGroup {
 
     param(
+
         [Parameter(Mandatory)]
         [string]$DisplayName
     )
 
+
+    # Escape apostrophes for OData just in case one is ever
+    # used in a group display name.
+
+    $SafeDisplayName =
+        $DisplayName.Replace("'", "''")
+
+
     $Groups = @(
+
         Get-MgGroup `
-            -Filter "displayName eq '$DisplayName'" `
+            -Filter "displayName eq '$SafeDisplayName'" `
             -Property `
                 Id,
                 DisplayName,
@@ -121,61 +264,102 @@ function Get-JeffInTechGroup {
                 MembershipRuleProcessingState,
                 IsAssignableToRole,
                 SecurityEnabled,
-                MailEnabled
+                MailEnabled,
+                MailNickname
     )
+
 
     if ($Groups.Count -gt 1) {
 
-        throw "More than one group named '$DisplayName' exists. Resolve the duplicate names before continuing."
+        throw @"
+More than one group named '$DisplayName' exists.
+
+Resolve the duplicate group names before running this script.
+"@
     }
+
 
     if ($Groups.Count -eq 1) {
 
         return $Groups[0]
     }
 
+
     return $null
 }
 
 
 # ============================================================
-# 5. Define dynamic department groups
+# 9. Define dynamic department groups
+#
+# These groups are attribute driven.
+#
+# Example:
+#
+# department = Finance
+#          ↓
+# GRP-Department-Finance
+#
+# If the department changes later, Entra reevaluates the rule.
 # ============================================================
 
 $DynamicGroups = @(
 
     @{
-        Name        = "GRP-Department-Finance"
-        Description = "JeffInTech Finance department security group populated dynamically from the Entra department attribute."
-        Rule        = 'user.department -eq "Finance"'
+        Name =
+            "GRP-Department-Finance"
+
+        Description =
+            "JeffInTech Finance department security group populated dynamically from the Entra department attribute."
+
+        Rule =
+            'user.department -eq "Finance"'
     },
 
     @{
-        Name        = "GRP-Department-Sales"
-        Description = "JeffInTech Sales department security group populated dynamically from the Entra department attribute."
-        Rule        = 'user.department -eq "Sales"'
+        Name =
+            "GRP-Department-Sales"
+
+        Description =
+            "JeffInTech Sales department security group populated dynamically from the Entra department attribute."
+
+        Rule =
+            'user.department -eq "Sales"'
     },
 
     @{
-        Name        = "GRP-Department-HR"
-        Description = "JeffInTech HR department security group populated dynamically from the Entra department attribute."
-        Rule        = 'user.department -eq "HR"'
+        Name =
+            "GRP-Department-HR"
+
+        Description =
+            "JeffInTech HR department security group populated dynamically from the Entra department attribute."
+
+        Rule =
+            'user.department -eq "HR"'
     },
 
     @{
-        Name        = "GRP-Department-IT"
-        Description = "JeffInTech IT department security group populated dynamically from the Entra department attribute."
-        Rule        = 'user.department -eq "IT"'
+        Name =
+            "GRP-Department-IT"
+
+        Description =
+            "JeffInTech IT department security group populated dynamically from the Entra department attribute."
+
+        Rule =
+            'user.department -eq "IT"'
     }
 )
 
 
 # ============================================================
-# 6. Create / validate dynamic department groups
+# 10. Create / validate dynamic department groups
 # ============================================================
 
-Write-Host "Creating dynamic department groups..."
+Write-Host "------------------------------------------------------------"
+Write-Host " Creating Dynamic Department Groups"
+Write-Host "------------------------------------------------------------"
 Write-Host ""
+
 
 foreach ($Group in $DynamicGroups) {
 
@@ -183,34 +367,90 @@ foreach ($Group in $DynamicGroups) {
         Get-JeffInTechGroup `
             -DisplayName $Group.Name
 
+
+    # --------------------------------------------------------
+    # GROUP DOES NOT EXIST
+    # --------------------------------------------------------
+
     if (-not $ExistingGroup) {
 
         $MailNickname =
             $Group.Name.Replace("-", "").ToLower()
 
+
         $Parameters = @{
-            displayName                   = $Group.Name
-            description                   = $Group.Description
-            mailEnabled                   = $false
-            mailNickname                  = $MailNickname
-            securityEnabled               = $true
-            groupTypes                    = @("DynamicMembership")
-            membershipRule                = $Group.Rule
-            membershipRuleProcessingState = "On"
+
+            displayName =
+                $Group.Name
+
+            description =
+                $Group.Description
+
+            mailEnabled =
+                $false
+
+            mailNickname =
+                $MailNickname
+
+            securityEnabled =
+                $true
+
+            groupTypes =
+                @("DynamicMembership")
+
+            membershipRule =
+                $Group.Rule
+
+            membershipRuleProcessingState =
+                "On"
         }
 
-        $CreatedGroup =
-            New-MgGroup `
-                -BodyParameter $Parameters
 
-        Write-Host "[CREATED] $($Group.Name)"
-        Write-Host "          Rule: $($Group.Rule)"
+        try {
+
+            $CreatedGroup =
+                New-MgGroup `
+                    -BodyParameter $Parameters
+
+
+            Write-Host "[CREATED] $($Group.Name)"
+            Write-Host "          $($Group.Rule)"
+            Write-Host ""
+        }
+        catch {
+
+            Write-Host ""
+            Write-Host "[ERROR] Could not create $($Group.Name)"
+            Write-Host ""
+            Write-Host $_.Exception.Message
+            Write-Host ""
+
+            throw @"
+Dynamic group creation failed.
+
+Common causes include:
+
+1. The tenant does not have the Microsoft Entra licensing
+   required for dynamic membership.
+
+2. Your signed-in account does not have enough administrative
+   privileges.
+
+3. Group.ReadWrite.All was not successfully consented.
+"@
+        }
     }
+
+
+    # --------------------------------------------------------
+    # GROUP ALREADY EXISTS
+    # --------------------------------------------------------
+
     else {
 
         # ----------------------------------------------------
-        # Protect against accidentally using a static group
-        # with the same name.
+        # Protect against accidentally using a STATIC group
+        # that happens to have the same name.
         # ----------------------------------------------------
 
         if (
@@ -219,17 +459,18 @@ foreach ($Group in $DynamicGroups) {
         ) {
 
             throw @"
-$($Group.Name) already exists, but it is NOT a dynamic group.
+$($Group.Name) already exists but it is NOT configured for
+dynamic membership.
 
-For safety, this script will not automatically convert an
-existing assigned group into a dynamic group.
+For safety, the script will not automatically convert it.
 
-Review the group manually before continuing.
+Review the existing group in Microsoft Entra before continuing.
 "@
         }
 
+
         # ----------------------------------------------------
-        # Make sure the existing dynamic rule is correct
+        # Correct the membership rule if necessary.
         # ----------------------------------------------------
 
         if (
@@ -243,57 +484,83 @@ Review the group manually before continuing.
                 -MembershipRuleProcessingState "On" `
                 -Description $Group.Description
 
+
             Write-Host "[UPDATED] $($Group.Name)"
-            Write-Host "          Rule: $($Group.Rule)"
+            Write-Host "          $($Group.Rule)"
+            Write-Host ""
         }
         else {
 
             Write-Host "[EXISTS]  $($Group.Name)"
+            Write-Host ""
         }
     }
 }
 
 
 # ============================================================
-# 7. Define assigned security groups
+# 11. Define assigned security groups
+#
+# These groups SHOULD NOT be driven automatically by department.
+#
+# Membership will be deliberately controlled later during the
+# appropriate project phase.
 # ============================================================
 
 $AssignedGroups = @(
 
     @{
-        Name        = "GRP-SSPR-Pilot"
-        Description = "JeffInTech pilot group for Self-Service Password Reset."
+        Name =
+            "GRP-SSPR-Pilot"
+
+        Description =
+            "JeffInTech pilot group for Self-Service Password Reset."
     },
 
     @{
-        Name        = "GRP-Passwordless-Pilot"
-        Description = "JeffInTech pilot group for passwordless authentication deployment."
+        Name =
+            "GRP-Passwordless-Pilot"
+
+        Description =
+            "JeffInTech pilot group for passwordless authentication deployment."
     },
 
     @{
-        Name        = "GRP-CA-Admins"
-        Description = "JeffInTech group used to target administrator Conditional Access controls."
+        Name =
+            "GRP-CA-Admins"
+
+        Description =
+            "JeffInTech group used to target administrator Conditional Access controls."
     },
 
     @{
-        Name        = "GRP-CA-SensitiveApps"
-        Description = "JeffInTech security group used with Conditional Access controls for sensitive applications."
+        Name =
+            "GRP-CA-SensitiveApps"
+
+        Description =
+            "JeffInTech security group used with Conditional Access controls for sensitive applications."
     },
 
     @{
-        Name        = "GRP-Contractors"
-        Description = "JeffInTech contractors synchronized from HR employeeType data."
+        Name =
+            "GRP-Contractors"
+
+        Description =
+            "JeffInTech contractor security group synchronized from HR employeeType data."
     }
 )
 
 
 # ============================================================
-# 8. Create assigned security groups
+# 12. Create assigned IAM/security groups
 # ============================================================
 
 Write-Host ""
-Write-Host "Creating assigned IAM/security groups..."
+Write-Host "------------------------------------------------------------"
+Write-Host " Creating Assigned IAM / Security Groups"
+Write-Host "------------------------------------------------------------"
 Write-Host ""
+
 
 foreach ($Group in $AssignedGroups) {
 
@@ -301,25 +568,29 @@ foreach ($Group in $AssignedGroups) {
         Get-JeffInTechGroup `
             -DisplayName $Group.Name
 
+
     if (-not $ExistingGroup) {
 
         $MailNickname =
             $Group.Name.Replace("-", "").ToLower()
 
-        $CreatedGroup =
-            New-MgGroup `
-                -DisplayName $Group.Name `
-                -Description $Group.Description `
-                -MailEnabled:$false `
-                -MailNickname $MailNickname `
-                -SecurityEnabled:$true
+
+        New-MgGroup `
+            -DisplayName $Group.Name `
+            -Description $Group.Description `
+            -MailEnabled:$false `
+            -MailNickname $MailNickname `
+            -SecurityEnabled:$true |
+        Out-Null
+
 
         Write-Host "[CREATED] $($Group.Name)"
     }
     else {
 
         # ----------------------------------------------------
-        # These groups should use assigned membership.
+        # Assigned groups must not accidentally be configured
+        # as dynamic groups.
         # ----------------------------------------------------
 
         if (
@@ -327,8 +598,16 @@ foreach ($Group in $AssignedGroups) {
             "DynamicMembership"
         ) {
 
-            throw "$($Group.Name) exists but is configured as a dynamic group. Review it before continuing."
+            throw @"
+$($Group.Name) exists but is configured as a dynamic group.
+
+This JeffInTech design expects this group to use assigned
+membership.
+
+Review the group before continuing.
+"@
         }
+
 
         Write-Host "[EXISTS]  $($Group.Name)"
     }
@@ -336,14 +615,27 @@ foreach ($Group in $AssignedGroups) {
 
 
 # ============================================================
-# 9. Create role-assignable PIM security group
+# 13. Create PIM role-assignable security group
+#
+# IMPORTANT:
+#
+# isAssignableToRole must be selected WHEN THE GROUP IS CREATED.
+# It cannot simply be turned on later.
+#
+# Role-assignable groups also use assigned membership rather
+# than dynamic membership.
 # ============================================================
 
 Write-Host ""
-Write-Host "Checking PIM role-assignable group..."
+Write-Host "------------------------------------------------------------"
+Write-Host " Creating / Validating PIM Cloud Operators Group"
+Write-Host "------------------------------------------------------------"
 Write-Host ""
 
-$PimGroupName = "GRP-PIM-CloudOperators"
+
+$PimGroupName =
+    "GRP-PIM-CloudOperators"
+
 
 $PimGroup =
     Get-JeffInTechGroup `
@@ -373,11 +665,13 @@ if (-not $PimGroup) {
             $true
     }
 
+
     try {
 
         $PimGroup =
             New-MgGroup `
                 -BodyParameter $PimParameters
+
 
         Write-Host "[CREATED] $PimGroupName"
         Write-Host "          Role assignable: True"
@@ -385,12 +679,17 @@ if (-not $PimGroup) {
     catch {
 
         Write-Host ""
-        Write-Host "[ERROR] Unable to create the PIM role-assignable group."
+        Write-Host "[ERROR] Unable to create $PimGroupName."
         Write-Host ""
-        Write-Host "Verify that:"
-        Write-Host "  - Your tenant supports role-assignable groups."
-        Write-Host "  - Your account has sufficient Entra privileges."
-        Write-Host "  - RoleManagement.ReadWrite.Directory was consented."
+        Write-Host $_.Exception.Message
+        Write-Host ""
+        Write-Host "Check the following:"
+        Write-Host ""
+        Write-Host "  1. Your tenant has the required Entra licensing."
+        Write-Host "  2. Your account has Privileged Role Administrator"
+        Write-Host "     or sufficient equivalent privileges."
+        Write-Host "  3. Group.ReadWrite.All was consented."
+        Write-Host "  4. RoleManagement.ReadWrite.Directory was consented."
         Write-Host ""
 
         throw
@@ -399,7 +698,7 @@ if (-not $PimGroup) {
 else {
 
     # --------------------------------------------------------
-    # isAssignableToRole cannot be changed after creation.
+    # This property cannot be turned from false to true later.
     # --------------------------------------------------------
 
     if ($PimGroup.IsAssignableToRole -ne $true) {
@@ -408,21 +707,28 @@ else {
 GRP-PIM-CloudOperators already exists, but it was NOT created
 as a role-assignable group.
 
-Microsoft Entra does not allow isAssignableToRole to be changed
-from false to true after the group has been created.
+Microsoft Entra does not allow an ordinary group to be changed
+into a role-assignable group later.
 
-For this lab, delete/recreate the group after confirming it is
-safe to do so, or create a new role-assignable group.
+Because this is your lab environment, we can delete and recreate
+that specific group if necessary after verifying its contents.
 "@
     }
+
 
     if (
         $PimGroup.GroupTypes -contains
         "DynamicMembership"
     ) {
 
-        throw "GRP-PIM-CloudOperators cannot be a dynamic group because role-assignable groups require assigned membership."
+        throw @"
+GRP-PIM-CloudOperators is configured incorrectly.
+
+A role-assignable group must use ASSIGNED membership rather than
+dynamic membership.
+"@
     }
+
 
     Write-Host "[EXISTS]  $PimGroupName"
     Write-Host "          Role assignable: True"
@@ -430,16 +736,20 @@ safe to do so, or create a new role-assignable group.
 
 
 # ============================================================
-# 10. Find GRP-Contractors
+# 14. Locate GRP-Contractors
 # ============================================================
 
 Write-Host ""
-Write-Host "Synchronizing JeffInTech contractors..."
+Write-Host "------------------------------------------------------------"
+Write-Host " Synchronizing Contractor Membership"
+Write-Host "------------------------------------------------------------"
 Write-Host ""
+
 
 $ContractorGroup =
     Get-JeffInTechGroup `
         -DisplayName "GRP-Contractors"
+
 
 if (-not $ContractorGroup) {
 
@@ -448,10 +758,18 @@ if (-not $ContractorGroup) {
 
 
 # ============================================================
-# 11. Get JeffInTech contractor identities
+# 15. Find JeffInTech contractor identities
 #
-# employeeType tells us the worker relationship.
-# UPN domain limits this operation to JeffInTech lab users.
+# We require BOTH:
+#
+# employeeType = Contractor
+#
+# AND
+#
+# UPN ending in @jeffintech.com
+#
+# This prevents the script from accidentally touching guests
+# or unrelated identities in the tenant.
 # ============================================================
 
 $Contractors = @(
@@ -466,7 +784,7 @@ $Contractors = @(
     Where-Object {
 
         $_.EmployeeType -eq "Contractor" -and
-        $_.UserPrincipalName -like "*@jeffintech.com"
+        $_.UserPrincipalName -like "*@$JeffInTechDomain"
     }
 )
 
@@ -476,7 +794,33 @@ Write-Host ""
 
 
 # ============================================================
-# 12. Read existing contractor group membership
+# 16. Important lab-stage warning
+#
+# If users were created but HR attributes have not yet been
+# populated, employeeType may still be empty.
+#
+# THAT IS NOT A FAILURE.
+#
+# We simply leave GRP-Contractors empty for now.
+# ============================================================
+
+if ($Contractors.Count -eq 0) {
+
+    Write-Host "[INFO] No users currently have:"
+    Write-Host ""
+    Write-Host "       employeeType = Contractor"
+    Write-Host ""
+    Write-Host "This is OK if we have not populated the JeffInTech HR"
+    Write-Host "attributes yet."
+    Write-Host ""
+    Write-Host "GRP-Contractors was created successfully."
+    Write-Host "We will populate it after the HR identity data is loaded."
+    Write-Host ""
+}
+
+
+# ============================================================
+# 17. Read current contractor group membership
 # ============================================================
 
 $ExistingContractorMembers = @(
@@ -486,17 +830,19 @@ $ExistingContractorMembers = @(
         -All
 )
 
-$ExistingMemberIds =
-    @(
-        $ExistingContractorMembers |
-        ForEach-Object {
-            $_.Id
-        }
-    )
+
+$ExistingMemberIds = @(
+
+    $ExistingContractorMembers |
+    ForEach-Object {
+
+        $_.Id
+    }
+)
 
 
 # ============================================================
-# 13. Add missing contractors
+# 18. Add missing contractor identities
 # ============================================================
 
 foreach ($Contractor in $Contractors) {
@@ -512,11 +858,13 @@ foreach ($Contractor in $Contractors) {
                 "https://graph.microsoft.com/v1.0/directoryObjects/$($Contractor.Id)"
         }
 
+
         try {
 
             New-MgGroupMemberByRef `
                 -GroupId $ContractorGroup.Id `
                 -BodyParameter $Reference
+
 
             Write-Host "[ADDED]   $($Contractor.DisplayName)"
             Write-Host "          $($Contractor.UserPrincipalName)"
@@ -524,7 +872,7 @@ foreach ($Contractor in $Contractors) {
         catch {
 
             Write-Host ""
-            Write-Host "[ERROR] Could not add:"
+            Write-Host "[ERROR] Could not add contractor:"
             Write-Host "        $($Contractor.DisplayName)"
             Write-Host ""
             Write-Host $_.Exception.Message
@@ -541,7 +889,7 @@ foreach ($Contractor in $Contractors) {
 
 
 # ============================================================
-# 14. Validation / summary
+# 19. Validation / final report
 # ============================================================
 
 Write-Host ""
@@ -550,7 +898,9 @@ Write-Host " JeffInTech Group Provisioning Complete"
 Write-Host "============================================================"
 Write-Host ""
 
+
 $JeffInTechGroupNames = @(
+
     "GRP-Department-Finance",
     "GRP-Department-Sales",
     "GRP-Department-HR",
@@ -563,11 +913,13 @@ $JeffInTechGroupNames = @(
     "GRP-Contractors"
 )
 
+
 $Results = foreach ($GroupName in $JeffInTechGroupNames) {
 
     $Group =
         Get-JeffInTechGroup `
             -DisplayName $GroupName
+
 
     if ($Group) {
 
@@ -576,25 +928,32 @@ $Results = foreach ($GroupName in $JeffInTechGroupNames) {
             DisplayName =
                 $Group.DisplayName
 
+
             MembershipType =
+
                 if (
                     $Group.GroupTypes -contains
                     "DynamicMembership"
                 ) {
+
                     "Dynamic"
                 }
                 else {
+
                     "Assigned"
                 }
 
+
             RoleAssignable =
                 $Group.IsAssignableToRole
+
 
             DynamicRule =
                 $Group.MembershipRule
         }
     }
 }
+
 
 $Results |
     Format-Table `
@@ -604,10 +963,23 @@ $Results |
         DynamicRule `
         -AutoSize
 
+
 Write-Host ""
-Write-Host "Expected total JeffInTech IAM groups: 10"
-Write-Host "Groups found: $($Results.Count)"
+Write-Host "Expected JeffInTech IAM groups: 10"
+Write-Host "JeffInTech IAM groups found:    $($Results.Count)"
 Write-Host ""
 
-Write-Host "Script completed successfully."
+
+if ($Results.Count -eq 10) {
+
+    Write-Host "[SUCCESS] All 10 JeffInTech IAM groups exist."
+}
+else {
+
+    Write-Host "[WARNING] Expected 10 groups but found $($Results.Count)."
+}
+
+
+Write-Host ""
+Write-Host "Script completed."
 Write-Host ""
