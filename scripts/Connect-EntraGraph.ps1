@@ -150,6 +150,89 @@ Format-Table
 
 
 
+####  Verify IT Group population
+$ITGroup = Get-MgGroup `
+    -Filter "displayName eq 'GRP-Department-IT'"
+
+Get-MgGroupMember `
+    -GroupId $ITGroup.Id `
+    -All |
+ForEach-Object {
+    Get-MgUser `
+        -UserId $_.Id `
+        -Property DisplayName,UserPrincipalName,Department
+} |
+Select-Object DisplayName,UserPrincipalName,Department |
+Format-Table
+####  Verify IT Group population
+
+
+####  Verify contractors Group population
+$ContractorGroup = Get-MgGroup `
+    -Filter "displayName eq 'GRP-Contractors'"
+
+Get-MgGroupMember `
+    -GroupId $ContractorGroup.Id `
+    -All |
+ForEach-Object {
+    Get-MgUser `
+        -UserId $_.Id `
+        -Property DisplayName,UserPrincipalName,EmployeeType
+} |
+Select-Object DisplayName,UserPrincipalName,EmployeeType |
+Format-Table
+####  Verify contractors Group population
+
+
+
+####  Check your dynamic rules directly
+Get-MgGroup `
+    -Filter "startswith(displayName,'GRP-Department-')" `
+    -Property DisplayName,GroupTypes,MembershipRule,MembershipRuleProcessingState |
+Select-Object `
+    DisplayName,
+    GroupTypes,
+    MembershipRule,
+    MembershipRuleProcessingState |
+Format-Table -Wrap
+#### Check your dynamic rules directly
+
+
+####  Verify the privileged group
+Get-MgGroup `
+    -Filter "displayName eq 'GRP-PIM-CloudOperators'" `
+    -Property DisplayName,SecurityEnabled,GroupTypes,IsAssignableToRole |
+Select-Object `
+    DisplayName,
+    SecurityEnabled,
+    GroupTypes,
+    IsAssignableToRole |
+Format-List
+####  Verify the privileged group
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
