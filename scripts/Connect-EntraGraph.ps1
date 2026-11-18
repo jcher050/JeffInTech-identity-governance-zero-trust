@@ -2,6 +2,13 @@
 # Purpose: Establish Microsoft Graph connectivity for the Apex IAM automation project.
 # Install and connect to the Microsoft Graph PowerShell module
 
+
+sudo -s
+#Run Terminal as an Admin Shell (zsh)
+sudo pwsh 
+#Run PowerShell (pwsh) as Admin (Root) on terminal
+
+
 Get-ExecutionPolicy
 #EXPLANATION: Displays the current PowerShell script execution policy (e.g., Restricted, RemoteSigned, Bypass). This determines what types of scripts are allowed to run.
 
